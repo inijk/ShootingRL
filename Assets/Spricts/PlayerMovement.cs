@@ -12,7 +12,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        //Rigidbody2Dのコンポーネントを取得
+        // Rigidbody2Dのコンポーネントを取得
         rb = GetComponent<Rigidbody2D>();
     }
 
