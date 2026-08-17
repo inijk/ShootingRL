@@ -58,6 +58,7 @@ public class DungeonManager : MonoBehaviour
     }
 
     // マップデータに沿って不要なドアを非アクティブ化
+    // マップデータに沿ってドアの状態（開・閉）を更新
     private void SetupDoors(Vector2Int coord)
     {
         Door[] doors = currentRoomInstance.GetComponentsInChildren<Door>();
@@ -66,11 +67,10 @@ public class DungeonManager : MonoBehaviour
         {
             Vector2Int targetCoord = coord + GetDirectionOffset(door.direction);
             
-            // 隣の座標に部屋が存在しない場合はドアを消す（壁扱い）
-            if (!mapData.ContainsKey(targetCoord))
-            {
-                door.gameObject.SetActive(false);
-            }
+            // 隣の座標に部屋が存在すれば「開く」、存在しなければ「閉じる（塗りつぶし＋壁化）」
+            bool isOpen = mapData.ContainsKey(targetCoord);
+            
+            door.SetDoorState(isOpen);
         }
     }
 
