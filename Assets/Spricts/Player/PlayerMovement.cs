@@ -20,6 +20,7 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody2D rb;
     private PlayerStats playerStats;
+    private PlayerAimController aimController;
 
     private Vector2 moveInput;
     private Vector2 blinkDirection;
@@ -37,6 +38,7 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         playerStats = GetComponent<PlayerStats>();
+        aimController = GetComponent<PlayerAimController>();
     }
 
     /// <summary>
@@ -94,6 +96,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        float currentSpeed = moveSpeed;
+        if (aimController != null && aimController.IsAiming)
+        {
+            currentSpeed *= aimController.AimSpeedMultiplier;
+        }
+
+        rb.linearVelocity = moveInput * currentSpeed;
         // 1. Blink（高速移動）中の処理
         if (isBlinking)
         {
