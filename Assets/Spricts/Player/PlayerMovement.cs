@@ -5,65 +5,86 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(PlayerStats))]
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("移動設定")]
+    [Header("通常移動設定")]
     [SerializeField] private float moveSpeed = 5f;
 
-    [Header("ダッシュ/ブリンク設定")]
-    [SerializeField] private float dashSpeed = 18f;
-    [SerializeField] private float dashDuration = 0.15f;
-    [SerializeField] private float dashStaminaCost = 25f;
+    [Header("Blink（瞬間回避）設定")]
+    [SerializeField] private float blinkSpeed = 18f;          // Blink中の速度
+    [SerializeField] private float blinkDuration = 0.15f;       // Blink本体（無敵等）の持続時間
+    [SerializeField] private float blinkInterval = 0.10f;      // Blink後のインターバル（硬直/受付時間）
+    [SerializeField] private float blinkStaminaCost = 25f;     // Blink発動時の消費スタミナ
+
+    [Header("長押しダッシュ設定")]
+    [SerializeField] private float dashSpeedMultiplier = 1.4f; // 通常速度に対するダッシュ倍率
+    [SerializeField] private float dashStaminaCostPerSec = 10f; // ダッシュ中の毎秒消費スタミナ
 
     private Rigidbody2D rb;
-    private PlayerStats playerStats;    
+    private PlayerStats playerStats;
 
     private Vector2 moveInput;
-    private Vector2 dashDirection;
-    
-    private bool isDashing;
-    private float dashTimer;
+    private Vector2 blinkDirection;
+
+    // フラグ・タイマー管理
+    [SerializeField] private bool isDashButtonPressed;   // ダッシュボタンが現在押されているか
+    [SerializeField] private bool isBlinking;            // Blink（高速移動）中か
+    [SerializeField] private bool isInBlinkInterval;     // Blink後のインターバル中か
+    [SerializeField] private bool isContinuousDashing;   // 長押しダッシュ状態か
+
+    private float blinkTimer;
+    private float intervalTimer;
 
     private void Awake()
     {
-        // Rigidbody2Dのコンポーネントを取得
         rb = GetComponent<Rigidbody2D>();
         playerStats = GetComponent<PlayerStats>();
     }
 
     /// <summary>
-    /// Input System (Player Inputコンポーネント) からの入力を受け取るメソッド
+    /// WASD/スティック移動入力
     /// </summary>
     public void OnMove(InputValue value)
     {
-        // WASDなどの入力値をVector2(x, y)として取得
         moveInput = value.Get<Vector2>();
-        
-        // 斜め移動時に移動速度が速くならないよう正規化（ベクトルの長さを最大1にする）
         if (moveInput.sqrMagnitude > 1f)
         {
             moveInput.Normalize();
         }
     }
 
+    /// <summary>
+    /// Dash / Blink ボタン入力（Input System）
+    /// </summary>
     public void OnDash_Blink(InputValue value)
     {
-        // ボタンが押された瞬間、かつ現在ダッシュ中でない場合
-        if (value.isPressed && !isDashing)
+        // 現在のボタンの押しっぱなし状態を保持
+        isDashButtonPressed = value.isPressed;
+
+        // ボタンが押された瞬間 ＆ アクション可能な状態（通常時）であればBlink発動
+        if (isDashButtonPressed && !isBlinking && !isInBlinkInterval && !isContinuousDashing)
         {
-            TryPerformDash();
+            TryPerformBlink();
+        }
+
+        // ボタンが離されたらダッシュ状態を即座に解除
+        if (!isDashButtonPressed)
+        {
+            isContinuousDashing = false;
         }
     }
-    
-    private void TryPerformDash()
-    {
-        // 1. スタミナを消費できるかチェック
-        if (playerStats.Stamina.Consume(dashStaminaCost))
-        {
-            // 2. ダッシュ開始処理
-            isDashing = true;
-            dashTimer = dashDuration;
 
-            // 入力方向があればその方向へ、入力がなければ現在向いている方向へ
-            dashDirection = moveInput != Vector2.zero ? moveInput : transform.up;
+    private void TryPerformBlink()
+    {
+        // スタミナ消費チェック
+        if (playerStats != null && playerStats.Stamina.Consume(blinkStaminaCost))
+        {
+            isBlinking = true;
+            isInBlinkInterval = false;
+            isContinuousDashing = false;
+
+            blinkTimer = blinkDuration;
+            
+            // 8方向補正したベクトルを取得（入力がなければ自機正面）
+            blinkDirection = Get8WayDirection(moveInput);
         }
         else
         {
@@ -73,21 +94,78 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isDashing)
+        // 1. Blink（高速移動）中の処理
+        if (isBlinking)
         {
-            // ダッシュ中の移動
-            rb.linearVelocity = dashDirection * dashSpeed;
+            rb.linearVelocity = blinkDirection * blinkSpeed;
 
-            dashTimer -= Time.fixedDeltaTime;
-            if (dashTimer <= 0f)
+            blinkTimer -= Time.fixedDeltaTime;
+            if (blinkTimer <= 0f)
             {
-                isDashing = false;
+                // Blink終了 ➔ インターバル期間へ移行
+                isBlinking = false;
+                isInBlinkInterval = true;
+                intervalTimer = blinkInterval;
             }
+            return;
         }
-        else
+
+        // 2. Blink後のインターバル中の処理
+        if (isInBlinkInterval)
         {
-            // 通常移動
+            // インターバル中も慣性や通常移動速度に抑える（ここでは一瞬減速）
             rb.linearVelocity = moveInput * moveSpeed;
+
+            intervalTimer -= Time.fixedDeltaTime;
+
+            // インターバル時間内であっても、ボタンが押されていればダッシュへ移行
+            if (isDashButtonPressed)
+            {
+                isInBlinkInterval = false;
+                isContinuousDashing = true;
+            }
+            else if (intervalTimer <= 0f)
+            {
+                // インターバル終了（ボタンが押されていなければ通常状態へ戻る）
+                isInBlinkInterval = false;
+            }
+            return;
         }
+
+        // 3. 長押しダッシュ中の処理
+        if (isContinuousDashing)
+        {
+            // ダッシュ中のスタミナ消費
+            if (playerStats != null && playerStats.Stamina.Consume(dashStaminaCostPerSec * Time.fixedDeltaTime))
+            {
+                rb.linearVelocity = moveInput * (moveSpeed * dashSpeedMultiplier);
+            }
+            else
+            {
+                // スタミナ切れになったらダッシュを解除して通常移動へ
+                isContinuousDashing = false;
+                rb.linearVelocity = moveInput * moveSpeed;
+            }
+            return;
+        }
+
+        // 4. 通常移動
+        rb.linearVelocity = moveInput * moveSpeed;
+    }
+
+    /// <summary>
+    /// 入力ベクトルを8方向にスナップ（補正）するメソッド
+    /// </summary>
+    private Vector2 Get8WayDirection(Vector2 input)
+    {
+        if (input == Vector2.zero)
+        {
+            return transform.up;
+        }
+
+        float angle = Mathf.Atan2(input.y, input.x) * Mathf.Rad2Deg;
+        float snappedAngle = Mathf.Round(angle / 45f) * 45f * Mathf.Deg2Rad;
+
+        return new Vector2(Mathf.Cos(snappedAngle), Mathf.Sin(snappedAngle)).normalized;
     }
 }

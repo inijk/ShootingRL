@@ -26,7 +26,7 @@
                 },
                 {
                     "name": "Dash_Blink",
-                    "type": "Button",
+                    "type": "PassThrough",
                     "id": "cbcc025e-99cd-40a0-ae1c-b31bc0d1a1be",
                     "expectedControlType": "",
                     "processors": "",
