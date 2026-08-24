@@ -17,7 +17,4 @@ Unity 6で制作中の2Dスタイリッシュローグライクシューティ�
 
 ## 💻 実行手順 / セットアップ
 
-リポジトリをクローンして実行するまでの手順を記述します。
-
-```bash
-git clone [https://github.com/username/repository-name.git](https://github.com/username/repository-name.git)
+(リポジトリをクローンして実行するまでの手順を記述します)
