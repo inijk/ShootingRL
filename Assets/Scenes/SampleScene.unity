@@ -5181,7 +5181,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   moveSpeed: 3
-  blinkSpeed: 18
+  blinkSpeed: 10
   blinkDuration: 0.25
   blinkInterval: 1
   blinkStaminaCost: 25

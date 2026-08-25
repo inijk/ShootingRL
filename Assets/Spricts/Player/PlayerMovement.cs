@@ -74,19 +74,29 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    // -------------------------------------------------------------
+    // 【修正箇所 1】Blink（ブリンク）の移動方向取得
+    // -------------------------------------------------------------
     private void TryPerformBlink()
     {
-        // スタミナ消費チェック
-        if (playerStats != null && playerStats.Stamina.Consume(blinkStaminaCost))
+        // 1. Blink用のスタミナを消費できるかチェック
+        if (playerStats.Stamina.Consume(blinkStaminaCost))
         {
+            // 2. Blink開始処理
             isBlinking = true;
-            isInBlinkInterval = false;
-            isContinuousDashing = false;
-
             blinkTimer = blinkDuration;
-            
-            // 8方向補正したベクトルを取得（入力がなければ自機正面）
-            blinkDirection = Get8WayDirection(moveInput);
+
+            // ★修正: 8方向変換(Get8WayDirection)を使わず、360度アナログ入力をそのまま使用
+            if (moveInput != Vector2.zero)
+            {
+                // スティックが倒されている方向へ（長さ1に正規化）
+                blinkDirection = moveInput.normalized;
+            }
+            else
+            {
+                // 入力が無ければ自機の正面（transform.up）へ
+                blinkDirection = transform.up;
+            }
         }
         else
         {
@@ -94,74 +104,46 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    // ※ 不要になった `Get8WayDirection` メソッドは削除またはコメントアウトしてOKです。
+
+        // -------------------------------------------------------------
+    // 【確認】FixedUpdate での通常移動・ダッシュ処理
+    // -------------------------------------------------------------
     private void FixedUpdate()
     {
-        float currentSpeed = moveSpeed;
-        if (aimController != null && aimController.IsAiming)
-        {
-            currentSpeed *= aimController.AimSpeedMultiplier;
-        }
-
-        rb.linearVelocity = moveInput * currentSpeed;
-        // 1. Blink（高速移動）中の処理
+        // 1. Blink中の処理
         if (isBlinking)
         {
             rb.linearVelocity = blinkDirection * blinkSpeed;
-
+            
             blinkTimer -= Time.fixedDeltaTime;
             if (blinkTimer <= 0f)
             {
-                // Blink終了 ➔ インターバル期間へ移行
                 isBlinking = false;
-                isInBlinkInterval = true;
-                intervalTimer = blinkInterval;
+                if (isDashButtonPressed) isContinuousDashing = true;
             }
             return;
         }
 
-        // 2. Blink後のインターバル中の処理
-        if (isInBlinkInterval)
-        {
-            // インターバル中も慣性や通常移動速度に抑える（ここでは一瞬減速）
-            rb.linearVelocity = moveInput * moveSpeed;
-
-            intervalTimer -= Time.fixedDeltaTime;
-
-            // インターバル時間内であっても、ボタンが押されていればダッシュへ移行
-            if (isDashButtonPressed)
-            {
-                isInBlinkInterval = false;
-                isContinuousDashing = true;
-            }
-            else if (intervalTimer <= 0f)
-            {
-                // インターバル終了（ボタンが押されていなければ通常状態へ戻る）
-                isInBlinkInterval = false;
-            }
-            return;
-        }
-
-        // 3. 長押しダッシュ中の処理
+        // 2. 長押しダッシュ中の処理
         if (isContinuousDashing)
         {
-            // ダッシュ中のスタミナ消費
-            if (playerStats != null && playerStats.Stamina.Consume(dashStaminaCostPerSec * Time.fixedDeltaTime))
+            if (playerStats.Stamina.Consume(dashStaminaCostPerSec * Time.fixedDeltaTime))
             {
+                // ★ moveInput が 360度の方向をそのまま保持しているため、全方位に滑らかにダッシュします
                 rb.linearVelocity = moveInput * (moveSpeed * dashSpeedMultiplier);
             }
             else
             {
-                // スタミナ切れになったらダッシュを解除して通常移動へ
                 isContinuousDashing = false;
                 rb.linearVelocity = moveInput * moveSpeed;
             }
             return;
         }
 
-        // 4. 通常移動
+        // 3. 通常移動（★ 360度アナログ自由移動）
         rb.linearVelocity = moveInput * moveSpeed;
     }
-
     /// <summary>
     /// 入力ベクトルを8方向にスナップ（補正）するメソッド
     /// </summary>
