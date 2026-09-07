@@ -11,7 +11,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Blink（瞬間回避）設定")]
     [SerializeField] private float blinkSpeed = 18f;          // Blink中の速度
     [SerializeField] private float blinkDuration = 0.15f;       // Blink本体（無敵等）の持続時間
-    [SerializeField] private float blinkInterval = 0.10f;      // Blink後のインターバル（硬直/受付時間）
+    //[SerializeField] private float blinkInterval = 0.10f;      // Blink後のインターバル（硬直/受付時間）
     [SerializeField] private float blinkStaminaCost = 25f;     // Blink発動時の消費スタミナ
 
     [Header("長押しダッシュ設定")]
