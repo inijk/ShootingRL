@@ -43,6 +43,13 @@ public class DungeonManager : MonoBehaviour
         currentRoomInstance = Instantiate(roomPrefab, Vector3.zero, Quaternion.identity);
         SetupDoors(coord);
 
+        // --- 【追加】敵の事前スポーン処理 ---
+        if (currentRoomInstance.TryGetComponent<Room>(out var room))
+        {
+            // 部屋のクリア状態（isCleared）を渡して第1ウェーブを生成
+            room.SpawnInitialEnemies(currentRoomData.isCleared);
+        }
+
         // --- 部屋内オブジェクトの状態復元 ---
         RoomData currentRoomData = mapData[coord];
         InteractableObject[] interactables = currentRoomInstance.GetComponentsInChildren<InteractableObject>();

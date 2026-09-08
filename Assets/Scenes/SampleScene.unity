@@ -5157,6 +5157,7 @@ GameObject:
   - component: {fileID: 1719844546}
   - component: {fileID: 1719844545}
   - component: {fileID: 1719844550}
+  - component: {fileID: 1719844555}
   - component: {fileID: 1719844552}
   - component: {fileID: 1719844551}
   - component: {fileID: 1719844554}
@@ -5183,7 +5184,6 @@ MonoBehaviour:
   moveSpeed: 3
   blinkSpeed: 10
   blinkDuration: 0.25
-  blinkInterval: 1
   blinkStaminaCost: 25
   dashSpeedMultiplier: 2
   dashStaminaCostPerSec: 20
@@ -5247,7 +5247,7 @@ Rigidbody2D:
   m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!212 &1719844548
 SpriteRenderer:
   serializedVersion: 2
@@ -5336,10 +5336,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11eb04715b1fb99409e324629bfa8a66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
-  baseMaxHP: 100
-  baseMaxMP: 50
-  baseMaxST: 100
-  baseSTRecoveryRate: 15
+  baseLevels:
+    ATK: 3
+    INT: 3
+    DEF: 3
+    MND: 3
+    VIT: 3
+    DEX: 3
 --- !u!114 &1719844551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5383,7 +5386,8 @@ MonoBehaviour:
   orbitRadius: 0.5
   cameraOffsetDistance: 3
   cameraLerpSpeed: 8
-  aimSpeedMultiplier: 0.5
+  mouseDeadzoneRatio: 0.15
+  mouseMaxRangeRatio: 0.4
 --- !u!58 &1719844554
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -5420,6 +5424,18 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.4
+--- !u!114 &1719844555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719844543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a820de55f9ed99947977daeadcdaf8d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StatusEffectManager
 --- !u!1 &1727625718
 GameObject:
   m_ObjectHideFlags: 0

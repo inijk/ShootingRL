@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D))]
-[RequireComponent(typeof(PlayerStats))]
+[RequireComponent(typeof(EntityStats))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("通常移動設定")]
@@ -19,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float dashStaminaCostPerSec = 10f; // ダッシュ中の毎秒消費スタミナ
 
     private Rigidbody2D rb;
-    private PlayerStats playerStats;
+    private EntityStats playerStats;
     private PlayerAimController aimController;
 
     private Vector2 moveInput;
@@ -37,7 +37,7 @@ public class PlayerMovement : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        playerStats = GetComponent<PlayerStats>();
+        playerStats = GetComponent<EntityStats>();
         aimController = GetComponent<PlayerAimController>();
     }
 
@@ -80,7 +80,7 @@ public class PlayerMovement : MonoBehaviour
     private void TryPerformBlink()
     {
         // 1. Blink用のスタミナを消費できるかチェック
-        if (playerStats.Stamina.Consume(blinkStaminaCost))
+        if (playerStats.ST.Consume(blinkStaminaCost))
         {
             // 2. Blink開始処理
             isBlinking = true;
@@ -128,7 +128,7 @@ public class PlayerMovement : MonoBehaviour
         // 2. 長押しダッシュ中の処理
         if (isContinuousDashing)
         {
-            if (playerStats.Stamina.Consume(dashStaminaCostPerSec * Time.fixedDeltaTime))
+            if (playerStats.ST.Consume(dashStaminaCostPerSec * Time.fixedDeltaTime))
             {
                 // ★ moveInput が 360度の方向をそのまま保持しているため、全方位に滑らかにダッシュします
                 rb.linearVelocity = moveInput * (moveSpeed * dashSpeedMultiplier);
