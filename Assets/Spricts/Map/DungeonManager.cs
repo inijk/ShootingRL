@@ -29,11 +29,31 @@ public class DungeonManager : MonoBehaviour
     private void GenerateMainRoute()
     {
         mapData.Clear();
-        // スタート部屋（最初からクリア扱い）
-        mapData.Add(new Vector2Int(0, 0), new RoomData { roomType = "Start", isCleared = true });
-        // 通常部屋（未クリア）
-        mapData.Add(new Vector2Int(1, 0), new RoomData { roomType = "Normal", isCleared = false });
-        mapData.Add(new Vector2Int(1, 1), new RoomData { roomType = "Boss", isCleared = false });
+
+        // スタート部屋（敵なし）
+        mapData.Add(new Vector2Int(0, 0), new RoomData { 
+            roomType = RoomType.Start 
+        });
+
+        // 通常の戦闘部屋
+        mapData.Add(new Vector2Int(1, 0), new RoomData { 
+            roomType = RoomType.Enemy 
+        });
+
+        // 【複合タイプ】「敵が出現」かつ「宝箱もある」部屋
+        mapData.Add(new Vector2Int(1, 1), new RoomData { 
+            roomType = RoomType.Enemy | RoomType.Treasure 
+        });
+
+        // 【複合タイプ】「敵が一切出ない」かつ「宝箱とショップ」がある部屋
+        mapData.Add(new Vector2Int(0, 1), new RoomData { 
+            roomType = RoomType.Treasure | RoomType.Shop 
+        });
+
+        // ボス部屋
+        mapData.Add(new Vector2Int(2, 1), new RoomData { 
+            roomType = RoomType.Boss | RoomType.Enemy 
+        });
     }
 
     private void SpawnRoom(Vector2Int coord)
@@ -43,16 +63,16 @@ public class DungeonManager : MonoBehaviour
         currentRoomInstance = Instantiate(roomPrefab, Vector3.zero, Quaternion.identity);
         SetupDoors(coord);
 
+        // --- 部屋内オブジェクトの状態復元 ---
+        RoomData currentRoomData = mapData[coord];
+        InteractableObject[] interactables = currentRoomInstance.GetComponentsInChildren<InteractableObject>();
+
         // --- 【追加】敵の事前スポーン処理 ---
         if (currentRoomInstance.TryGetComponent<Room>(out var room))
         {
             // 部屋のクリア状態（isCleared）を渡して第1ウェーブを生成
-            room.SpawnInitialEnemies(currentRoomData.isCleared);
+            room.SpawnInitialEnemies(currentRoomData.isCleared, currentRoomData.roomType);
         }
-
-        // --- 部屋内オブジェクトの状態復元 ---
-        RoomData currentRoomData = mapData[coord];
-        InteractableObject[] interactables = currentRoomInstance.GetComponentsInChildren<InteractableObject>();
 
         foreach (var obj in interactables)
         {
