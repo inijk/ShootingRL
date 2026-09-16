@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class EntityStats : MonoBehaviour
@@ -24,6 +25,11 @@ public class EntityStats : MonoBehaviour
     public Stat MaxHP { get; private set; }
     public Stat MaxST { get; private set; }
     public Stat STRecoveryRate { get; private set; }
+
+    // 死亡時に通知されるイベント
+    public event Action OnDeath;
+    private bool isDead = false;
+    public bool IsDead => isDead;
 
     // 画面表示・動的リソース (ResourceGauge を再利用)
     public ResourceGauge HP { get; private set; }
@@ -70,6 +76,22 @@ public class EntityStats : MonoBehaviour
         if (ST.CurrentValue < MaxST.Value)
         {
             ST.Recover(STRecoveryRate.Value * Time.deltaTime);
+        }
+        CheckDeath();
+    }
+
+    /// <summary>
+    /// HPが0以下になったかを検証し、死亡イベントを発火する
+    /// </summary>
+    public void CheckDeath()
+    {
+        if (isDead) return;
+
+        // ResourceGaugeのCurrentValueを利用している想定[cite: 1, 2]
+        if (HP != null && HP.CurrentValue <= 0f)
+        {
+            isDead = true;
+            OnDeath?.Invoke(); // 登録されている死亡時処理を実行
         }
     }
 }
