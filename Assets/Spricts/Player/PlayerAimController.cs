@@ -3,6 +3,16 @@ using UnityEngine.InputSystem;
 
 public class PlayerAimController : MonoBehaviour
 {
+    // 操作モードの定義
+    public enum AimControlMode
+    {
+        Gamepad,
+        Mouse
+    }
+
+    [Header("操作モード設定")]
+    [SerializeField] private AimControlMode currentControlMode = AimControlMode.Mouse;
+
     [Header("コンポーネント参照")]
     [SerializeField] private Transform cameraTarget;      // Cinemachineが追従する空のTarget
     [SerializeField] private Transform aimPointer;       // プレイヤーの周りを回る指示スプライト
@@ -18,8 +28,10 @@ public class PlayerAimController : MonoBehaviour
     private Camera mainCamera;
     
     private Vector2 rawAimInput;                       // スティック入力値
-    private Vector2 currentAimDirection = Vector2.up; // 現在の狙い方向（初期値は上）
+    private Vector2 currentAimDirection = Vector2.up; // 現在の狙い方向
     private float currentCameraOffsetFactor = 0f;     // カメラ移動の適用割合 (0.0 ～ 1.0)
+
+    public AimControlMode CurrentControlMode => currentControlMode;
 
     private void Awake()
     {
@@ -35,7 +47,7 @@ public class PlayerAimController : MonoBehaviour
     }
 
     /// <summary>
-    /// Input System: Look アクション（マウス座標 / 右スティック）の入力受取
+    /// Input System: Look アクションの入力受取
     /// </summary>
     public void OnLook(InputValue value)
     {
@@ -43,77 +55,81 @@ public class PlayerAimController : MonoBehaviour
     }
 
     /// <summary>
-    /// 操作デバイスに応じてエイム方向とカメラシフト率を同時計算
+    /// UIボタン等から操作モードを変更するための公開メソッド
+    /// </summary>
+    public void SetControlMode(int modeIndex)
+    {
+        // 0: Gamepad, 1: Mouse (DropdownやButtonのOnClickから指定可能)
+        currentControlMode = (AimControlMode)modeIndex;
+    }
+
+    public void SwitchToGamepadMode() => currentControlMode = AimControlMode.Gamepad;
+    public void SwitchToMouseMode() => currentControlMode = AimControlMode.Mouse;
+
+    /// <summary>
+    /// 選択された操作モードに基づいてエイム＆カメラを計算
     /// </summary>
     private void UpdateAimDirectionAndCameraFactor()
     {
-        if (playerInput == null || mainCamera == null) return;
+        if (mainCamera == null) return;
 
-        // 現在使用中の操作スキームを確認（またはデバイス判定）
-        string scheme = playerInput.currentControlScheme;
-        bool isGamepad = (scheme != null && scheme.Contains("Gamepad"));
-
-        // -----------------------------------------------------------------
-        // 【1. ゲームパッド操作時】
-        // -----------------------------------------------------------------
-        if (isGamepad)
+        // =================================================================
+        // A. 【ゲームパッドモード】
+        // =================================================================
+        if (currentControlMode == AimControlMode.Gamepad)
         {
             if (rawAimInput.sqrMagnitude > 0.05f)
             {
+                // スティックを倒している間：向きを更新し、傾きに応じてカメラをオフセット
                 currentAimDirection = rawAimInput.normalized;
                 currentCameraOffsetFactor = Mathf.Clamp01(rawAimInput.magnitude);
             }
             else
             {
-                // スティックを戻したらカメラのみ中心へ戻す
+                // スティックを離した時：向き(currentAimDirection)は維持し、カメラのみ中心に戻す
                 currentCameraOffsetFactor = 0f;
             }
-            return;
+            return; // マウス処理へ落とさず確実に終了
         }
 
-        // -----------------------------------------------------------------
-        // 【2. マウス操作時】
-        // -----------------------------------------------------------------
-        if (Mouse.current != null)
+        // =================================================================
+        // B. 【マウスモード】
+        // =================================================================
+        if (currentControlMode == AimControlMode.Mouse && Mouse.current != null)
         {
-            // 1. マウスの位置を取得してビューポート座標（0.0 ~ 1.0）に変換
+            // 1. マウス位置をビューポート座標（0.0 ~ 1.0）へ変換
             Vector3 mouseScreenPos = Mouse.current.position.ReadValue();
             Vector3 mouseViewportPos = mainCamera.ScreenToViewportPoint(mouseScreenPos);
 
-            // 2. プレイヤーの位置をビューポート座標に変換
-            Vector3 playerViewportPos = mainCamera.WorldToViewportPoint(transform.position);
+            // 2. プレイヤー（画面中心）のビューポート座標を (0.5, 0.5) に固定
+            Vector2 centerViewportPos = new Vector2(0.5f, 0.5f);
 
-            // 3. 画面中央（自機）からの差分と距離（distance）を計算
-            Vector2 diff = (Vector2)(mouseViewportPos - playerViewportPos);
-            float distance = diff.magnitude; // ※画面端で約0.5
+            // 3. 画面中心からの差分と距離（distance）を計算
+            Vector2 diff = (Vector2)mouseViewportPos - centerViewportPos;
+            float distance = diff.magnitude; // 画面中央からの距離（画面端で約0.5）
 
-            // 方向の更新
+            // マウスの向き計算
             if (distance > 0.001f)
             {
                 currentAimDirection = diff.normalized;
             }
 
-            // 4. distance の値に応じてカメラ移動割合（0.0 ~ 1.0）を算出
+            // 画面中央からの距離（しきい値）に応じたカメラオフセット計算
             if (distance <= mouseDeadzoneRatio)
             {
-                // 不感帯の内側ならカメラはズレない（中心に戻る）
                 currentCameraOffsetFactor = 0f;
             }
             else
             {
-                // 不感帯の外側なら mouseMaxRangeRatio に向かって 0.0 -> 1.0 へ補間
                 float range = mouseMaxRangeRatio - mouseDeadzoneRatio;
                 if (range > 0.0001f)
                 {
                     currentCameraOffsetFactor = Mathf.Clamp01((distance - mouseDeadzoneRatio) / range);
                 }
             }
-        }
+}
     }
 
-    /// <summary>
-    /// 衛星インジケーター（三角形）の位置と向きを更新
-    /// </summary>
     private void UpdatePointerTransform()
     {
         if (aimPointer == null) return;
@@ -125,14 +141,10 @@ public class PlayerAimController : MonoBehaviour
         aimPointer.rotation = Quaternion.Euler(0, 0, angle);
     }
 
-    /// <summary>
-    /// Cinemachine追従用の CameraTarget を移動させる
-    /// </summary>
     private void UpdateCameraTargetPosition()
     {
         if (cameraTarget == null) return;
 
-        // 計算された移動割合 (currentCameraOffsetFactor) を乗算してターゲット位置を決定
         Vector3 targetLocalPos = (Vector3)(currentAimDirection * (cameraOffsetDistance * currentCameraOffsetFactor));
 
         cameraTarget.localPosition = Vector3.Lerp(
