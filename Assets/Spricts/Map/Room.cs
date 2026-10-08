@@ -15,23 +15,44 @@ public class Room : MonoBehaviour
     }
 
     // 第1ウェーブ（事前出現）の敵を生成するメソッド
-    public void SpawnInitialEnemies(bool isCleared, RoomType roomType)
+    public void SpawnInitialEnemies(RoomData roomData)
     {
-        if (isCleared) return; // すでにクリア済みなら出さない[cite: 3]
+        // すでにクリア済みなら敵は生成しない
+        if (roomData.isCleared) return;
 
-        // 「Enemy」か「Boss」タグが含まれていない部屋なら敵を出さない
-        bool hasEnemy = (roomType & (RoomType.Enemy | RoomType.Boss)) != 0;
-        if (!hasEnemy) return;
-
-        // --- 敵のスポーン処理を行う ---
-        foreach (var spawner in spawners)
+        // 【パターンA】一度訪問したことがあり、残存敵データがある場合 ➔ 状態を復元
+        if (roomData.isVisited)
         {
-            if (spawner.isInitialWave)
+            foreach (var enemyData in roomData.remainingEnemies)
             {
-                GameObject selectedPrefab = GetRandomEnemyPrefab();
-                if (selectedPrefab != null)
+                // 敵プレハブをロード/参照して保存された位置・HPで生成
+                GameObject enemyPrefab = GetEnemyPrefabByName(enemyData.enemyPrefabName);
+                if (enemyPrefab != null)
                 {
-                    spawner.Spawn(selectedPrefab);
+                    GameObject spawnedEnemy = Instantiate(enemyPrefab, enemyData.position, Quaternion.identity, transform);
+                    
+                    // HPの復元
+                    if (spawnedEnemy.TryGetComponent<EntityStats>(out var stats))
+                    {
+                        // 保存されているHPまで減算/調整
+                        float damageToApply = stats.HP.MaxStat.Value - enemyData.currentHP;
+                        stats.HP.Consume(damageToApply);
+                    }
+                }
+            }
+        }
+        // 【パターンB】初めて訪れる部屋の場合 ➔ 初期スポナーから出現させる
+        else
+        {
+            foreach (var spawner in spawners)
+            {
+                if (spawner.isInitialWave)
+                {
+                    GameObject selectedPrefab = GetRandomEnemyPrefab();
+                    if (selectedPrefab != null)
+                    {
+                        spawner.Spawn(selectedPrefab);
+                    }
                 }
             }
         }
@@ -43,5 +64,24 @@ public class Room : MonoBehaviour
         if (enemyPrefabs == null || enemyPrefabs.Count == 0) return null;
         int randomIndex = Random.Range(0, enemyPrefabs.Count);
         return enemyPrefabs[randomIndex];
+    }
+
+    /// <summary>
+    /// プレハブ名（文字列）から一致する敵プレハブを取得する
+    /// </summary>
+    private GameObject GetEnemyPrefabByName(string prefabName)
+    {
+        if (enemyPrefabs == null || enemyPrefabs.Count == 0) return null;
+
+        foreach (var prefab in enemyPrefabs)
+        {
+            if (prefab != null && prefab.name == prefabName)
+            {
+                return prefab;
+            }
+        }
+
+        Debug.LogWarning($"[Room] 指定された敵プレハブ '{prefabName}' が enemyPrefabs に見つかりません。");
+        return null;
     }
 }

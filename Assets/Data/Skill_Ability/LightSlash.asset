@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d9ff04ae449a934c829bdea2d4cb450, type: 3}
+  m_Name: LightSlash
+  m_EditorClassIdentifier: Assembly-CSharp::SkillData
+  skillName: Light Slash
+  description: "\u8EFD\u304F\u7D20\u65E9\u3044\u6247\u5F62\u306E\u65AC\u6483"
+  icon: {fileID: 0}
+  wpCost: 3
+  damageMultiplier: 0.75
+  hitboxPrefab: {fileID: 0}

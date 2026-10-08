@@ -55,7 +55,7 @@ MonoBehaviour:
     INT: 1
     DEF: 0
     MND: 0
-    VIT: 7
+    VIT: 1
     DEX: 0
 --- !u!212 &2823648793653992012
 SpriteRenderer:

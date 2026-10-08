@@ -61,30 +61,30 @@ public class DungeonManager : MonoBehaviour
         if (currentRoomInstance != null) Destroy(currentRoomInstance);
 
         currentRoomInstance = Instantiate(roomPrefab, Vector3.zero, Quaternion.identity);
+
+        // 1. マップデータの取得
+        RoomData currentRoomData = mapData[coord];
+
         SetupDoors(coord);
 
-        // --- 部屋内オブジェクトの状態復元 ---
-        RoomData currentRoomData = mapData[coord];
-        InteractableObject[] interactables = currentRoomInstance.GetComponentsInChildren<InteractableObject>();
-
-        // --- 【追加】敵の事前スポーン処理 ---
+        // 2. 敵の事前スポーン/状態復元処理
         if (currentRoomInstance.TryGetComponent<Room>(out var room))
         {
-            // 部屋のクリア状態（isCleared）を渡して第1ウェーブを生成
-            room.SpawnInitialEnemies(currentRoomData.isCleared, currentRoomData.roomType);
+            // 【修正】 currentRoomData （1つの引数）だけを渡す
+            room.SpawnInitialEnemies(currentRoomData);
         }
 
+        // 3. 部屋内オブジェクト（宝箱など）の状態復元
+        InteractableObject[] interactables = currentRoomInstance.GetComponentsInChildren<InteractableObject>();
         foreach (var obj in interactables)
         {
             bool isOpened = currentRoomData.openedChestIDs.Contains(obj.objectID);
-            // 部屋がクリア済みか、開封済みかを渡して初期化
             obj.Setup(currentRoomData.isCleared, isOpened);
         }
 
-        // ※スタート部屋など元から敵がいない部屋の場合のチェック
         CheckRoomClearCondition();
     }
-
+    
     // 部屋内の敵が全滅した時に呼び出すメソッド
     public void OnEnemyDefeated()
     {
@@ -158,13 +158,56 @@ public class DungeonManager : MonoBehaviour
 
         if (mapData.ContainsKey(nextCoord))
         {
+            // 【最重要追加】移動して旧部屋が消える前に、現在いる部屋の敵・状態を保存する
+            SaveCurrentRoomState();
+
+            // 座標を移動先に更新
             currentGridCoord = nextCoord;
+
+            // 新しい部屋を生成（旧部屋はここで Destroy される）
             SpawnRoom(currentGridCoord);
 
             // プレイヤーの位置を反対側のドア付近へ移動
             RelocatePlayer(enteredDirection);
         }
     }
+
+    // 部屋切り替え時に呼び出す処理
+    private void SaveCurrentRoomState()
+    {
+        if (mapData.TryGetValue(currentGridCoord, out RoomData currentRoomData))
+        {
+            // 訪問済みフラグをオン
+            currentRoomData.isVisited = true;
+
+            // まだクリアしていない部屋の場合、生存している敵の情報を記録
+            if (!currentRoomData.isCleared)
+            {
+                currentRoomData.remainingEnemies.Clear();
+
+                // シーン上の敵を取得（"Enemy" タグなどで検索）
+                GameObject[] activeEnemies = GameObject.FindGameObjectsWithTag("Enemy");
+                foreach (var enemyObj in activeEnemies)
+                {
+                    if (enemyObj.TryGetComponent<EntityStats>(out var stats))
+                    {
+                        // 倒されていない（HP > 0）敵の情報を保存
+                        if (!stats.IsDead)
+                        {
+                            EnemySaveData enemyData = new EnemySaveData
+                            {
+                                enemyPrefabName = enemyObj.name.Replace("(Clone)", "").Trim(), // プレハブ名
+                                position = enemyObj.transform.position,
+                                currentHP = stats.HP.CurrentValue
+                            };
+                            currentRoomData.remainingEnemies.Add(enemyData);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     // 入ってきた方向の「反対側」にプレイヤーを配置
     private void RelocatePlayer(Direction enteredDirection)

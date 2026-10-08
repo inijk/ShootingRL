@@ -1,5 +1,15 @@
 using System.Collections.Generic;
 using System;
+using UnityEngine;
+
+// 【追加】部屋内に残っている敵の情報を保持するデータ構造
+[System.Serializable]
+public class EnemySaveData
+{
+    public string enemyPrefabName; // 敵の種類（プレハブ名）
+    public Vector2 position;       // 座標
+    public float currentHP;        // 現在HP
+}
 
 // 2の階乗（1, 2, 4, 8, 16...）で値を割り振ります
 [Flags]
@@ -21,6 +31,10 @@ public class RoomData
     public RoomType roomType;          // 部屋の種類（Start, Normal, Boss など）
     public bool isCleared = false;   // 敵全滅フラグ（初期値は未クリア）
     public List<int> openedChestIDs = new List<int>(); // 開封済み宝箱のIDリスト
+
+    // 【追加】その部屋で生存している敵のリスト
+    public List<EnemySaveData> remainingEnemies = new List<EnemySaveData>();
+    public bool isVisited = false; // 一度でも訪問したことがあるか
 
     // 特定のタイプが含まれているかを判定するヘルパーメソッド
     public bool HasType(RoomType type)

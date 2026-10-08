@@ -7,15 +7,6 @@
             "id": "361e674c-08a7-430d-8fee-2d6cac7c5429",
             "actions": [
                 {
-                    "name": "Move",
-                    "type": "Value",
-                    "id": "03ff1ba3-d3d0-4161-854b-948d5e5acc02",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
                     "name": "Interact",
                     "type": "Button",
                     "id": "b56966fe-590b-4ef2-9d43-d47d1010a3d0",
@@ -23,6 +14,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Move",
+                    "type": "Value",
+                    "id": "03ff1ba3-d3d0-4161-854b-948d5e5acc02",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 },
                 {
                     "name": "Dash_Blink",
@@ -55,6 +55,24 @@
                     "name": "Fire1",
                     "type": "Button",
                     "id": "31959b34-e574-44e8-b690-1700d4397b94",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Fire2",
+                    "type": "Button",
+                    "id": "32f1279b-73fb-43af-abe0-39a7342c4580",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ChangeWeapon",
+                    "type": "Button",
+                    "id": "595f58ad-a070-4f6c-a5b7-37a64a093a8d",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -125,6 +143,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "fc51bbec-95e9-4ca6-9b0b-b2fb0ed2bd80",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ChangeWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "878b836f-08a7-4c39-a94d-b97b8f674dcb",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ChangeWeapon",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -246,6 +286,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Fire1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "54a52532-674b-4a0c-b3a7-8def749e71df",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Fire2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3c8fea80-663f-4d23-90f9-77c1270ebb85",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Fire2",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
