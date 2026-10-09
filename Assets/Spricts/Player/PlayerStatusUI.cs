@@ -4,72 +4,142 @@ using TMPro;
 public class PlayerStatusUI : MonoBehaviour
 {
     [Header("― 参照コンポーネント ―")]
-    [SerializeField] private EntityStats playerStats;
+    [SerializeField] private EntityStats playerStats;     //[cite: 3]
     [SerializeField] private WeaponManager weaponManager;
 
     [Header("― UIコンポーネント ―")]
     [SerializeField] private TextMeshProUGUI statusText;
 
-    private void Start()
+    // 内部キャッシュ用データ
+    private string hpString = "HP: --- / ---";
+    private string stString = "ST: --- / ---";
+    private string weaponString = "装備: なし";
+    private string wpString = "WP: --- / ---";
+
+    private void OnEnable()
     {
-        // 参照が未設定の場合は親や同一オブジェクトから自動取得[cite: 2]
-        if (playerStats == null) playerStats = GetComponentInParent<EntityStats>();
-        if (weaponManager == null) weaponManager = GetComponentInParent<WeaponManager>();
+        RegisterEvents();
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        UpdateStatusDisplay();
+        UnregisterEvents();
+    }
+
+    private void Start()
+    {
+        if (playerStats == null) playerStats = GetComponentInParent<EntityStats>(); //[cite: 3]
+        if (weaponManager == null) weaponManager = GetComponentInParent<WeaponManager>();
+
+        // イベントの再登録と初期描画
+        RegisterEvents();
+        RefreshAllDisplay();
+    }
+
+    private void RegisterEvents()
+    {
+        UnregisterEvents(); // 重複登録防止
+
+        // 1. HP / ST のイベント登録[cite: 1]
+        if (playerStats != null)
+        {
+            if (playerStats.HP != null) playerStats.HP.OnValueChanged += OnHPChanged; //[cite: 1]
+            if (playerStats.ST != null) playerStats.ST.OnValueChanged += OnSTChanged; //[cite: 1]
+        }
+
+        // 2. 武器 / WP のイベント登録
+        if (weaponManager != null)
+        {
+            weaponManager.OnWeaponSwitched += OnWeaponSwitched;
+            weaponManager.OnActiveWeaponWPChanged += OnWPChanged;
+        }
+    }
+
+    private void UnregisterEvents()
+    {
+        if (playerStats != null)
+        {
+            if (playerStats.HP != null) playerStats.HP.OnValueChanged -= OnHPChanged; //[cite: 1]
+            if (playerStats.ST != null) playerStats.ST.OnValueChanged -= OnSTChanged; //[cite: 1]
+        }
+
+        if (weaponManager != null)
+        {
+            weaponManager.OnWeaponSwitched -= OnWeaponSwitched;
+            weaponManager.OnActiveWeaponWPChanged -= OnWPChanged;
+        }
+    }
+
+    // --- イベント受信ハンドラ ---
+
+    private void OnHPChanged(float current, float max)
+    {
+        hpString = $"HP: {current:F0} / {max:F0}";
+        RenderUI();
+        // 将来のゲージ対応例: hpSlider.value = current / max;
+    }
+
+    private void OnSTChanged(float current, float max)
+    {
+        stString = $"ST: {current:F1} / {max:F0}";
+        RenderUI();
+        // 将来のゲージ対応例: stSlider.value = current / max;
+    }
+
+    private void OnWeaponSwitched(WeaponInstance weapon)
+    {
+        if (weapon != null && weapon.Data != null)
+        {
+            weaponString = $"装備: {weapon.Data.weaponName}";
+            if (weapon.WPGauge != null)
+            {
+                wpString = $"WP: {weapon.WPGauge.CurrentValue:F1} / {weapon.WPGauge.MaxStat.Value:F0}";
+            }
+        }
+        else
+        {
+            weaponString = "装備: なし";
+            wpString = "WP: --- / ---";
+        }
+        RenderUI();
+    }
+
+    private void OnWPChanged(float current, float max)
+    {
+        wpString = $"WP: {current:F1} / {max:F0}";
+        RenderUI();
+        // 将来のゲージ対応例: wpSlider.value = current / max;
     }
 
     /// <summary>
-    /// ステータス、ST、装備中の武器・WP情報を毎フレーム取得して表示更新
+    /// キャッシュされた文字列をまとめて描画（描画呼び出しの集約）
     /// </summary>
-    public void UpdateStatusDisplay()
+    private void RenderUI()
     {
-        if (statusText == null) return;
+        if (statusText != null)
+        {
+            statusText.text = $"{hpString}\n{stString}\n{weaponString}\n{wpString}";
+        }
+    }
 
-        // 1. HP・ST 情報取得（EntityStats から参照）[cite: 2]
-        string hpText = "HP: --- / ---";
-        string stText = "ST: --- / ---";
-
+    /// <summary>
+    /// 初期表示やリセット時の全表示強制更新
+    /// </summary>
+    public void RefreshAllDisplay()
+    {
         if (playerStats != null)
         {
-            // HP
-            if (playerStats.HP != null)
-            {
-                hpText = $"HP: {playerStats.HP.CurrentValue:F0} / {playerStats.HP.MaxStat.Value:F0}";
-            }
-
-            // ST (リアルタイム表示)[cite: 2]
-            if (playerStats.ST != null)
-            {
-                stText = $"ST: {playerStats.ST.CurrentValue:F1} / {playerStats.ST.MaxStat.Value:F0}";
-            }
+            if (playerStats.HP != null) OnHPChanged(playerStats.HP.CurrentValue, playerStats.HP.MaxStat.Value);
+            if (playerStats.ST != null) OnSTChanged(playerStats.ST.CurrentValue, playerStats.ST.MaxStat.Value);
         }
-
-        // 2. 装備中武器 & WP 情報取得（WeaponManager から参照）
-        string weaponName = "なし";
-        string wpText = "WP: --- / ---";
 
         if (weaponManager != null && weaponManager.ActiveWeapon != null)
         {
-            WeaponInstance activeWeapon = weaponManager.ActiveWeapon;
-
-            // 武器名
-            if (activeWeapon.Data != null)
-            {
-                weaponName = activeWeapon.Data.weaponName;
-            }
-
-            // WP (リアルタイム表示)
-            if (activeWeapon.WPGauge != null)
-            {
-                wpText = $"WP: {activeWeapon.WPGauge.CurrentValue:F1} / {activeWeapon.WPGauge.MaxStat.Value:F0}";
-            }
+            OnWeaponSwitched(weaponManager.ActiveWeapon);
         }
-
-        // 3. テキスト描画の反映
-        statusText.text = $"{hpText}\n{stText}\n装備: {weaponName}\n{wpText}";
+        else
+        {
+            RenderUI();
+        }
     }
 }
