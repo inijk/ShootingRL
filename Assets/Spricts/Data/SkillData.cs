@@ -1,28 +1,26 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewSkillData", menuName = "Combat/Skill Data")]
-public class SkillData : ScriptableObject
+public abstract class SkillData : ScriptableObject
 {
-    [Header("― 基本情報 ―")]
-    public string skillName = "スキル名";
-    [TextArea(2, 5)]
-    public string description = "スキルの説明文";
+    [Header("― スキル共通情報 ―")]
+    public string skillName;
+    [TextArea(2, 5)] public string description;
     public Sprite icon;
+    public float wpCost = 3f;
 
-    [Header("― コスト・属性 ―")]
-    public float wpCost = 3f; // 消費WP
-
-    [Header("― 戦闘パラメータ ―")]
-    public float damageMultiplier = 1.0f; // 威力倍率（ステータスATKに対する乗数など）
-    public GameObject hitboxPrefab;       // 生成する攻撃判定（Hitbox）のプレハブ
-
-    // エディタ上で値の変更・アセット名の変更があった際に自動呼び出しされる
     private void OnValidate()
     {
-        // アセット名（ファイル名）を自動的に skillName に代入
         if (!string.IsNullOrEmpty(name))
         {
             skillName = name;
         }
     }
+
+    /// <summary>
+    /// スキル発動処理
+    /// </summary>
+    /// <param name="parentTransform">生成元となる AttackPoint 等の Transform</param>
+    /// <param name="aimDirection">狙い方向</param>
+    /// <param name="userStats">発動者のステータス</param>
+    public abstract void Execute(Transform parentTransform, Vector2 aimDirection, EntityStats userStats);
 }

@@ -14,6 +14,7 @@ public class PlayerSkillExecutor : MonoBehaviour
     [Tooltip("スキル2（例: ヘビィスラッシュ等）用アクション")]
     [SerializeField] private InputActionReference skill2Action;       // 例: 2キーや攻撃ボタン2
 
+    [SerializeField] private Transform attackPoint; // AimPointerの子にある AttackPoint を割り当て
     private WeaponManager weaponManager;
 
     private void Awake()
@@ -66,21 +67,25 @@ public class PlayerSkillExecutor : MonoBehaviour
         WeaponInstance currentWeapon = weaponManager.ActiveWeapon;
         if (currentWeapon == null || currentWeapon.Data == null) return;
 
-        // 装備中の武器にセットされているスキル一覧から取得
         if (skillIndex < currentWeapon.Data.settableSkills.Count)
         {
             SkillData skillToUse = currentWeapon.Data.settableSkills[skillIndex];
 
-            // WPチェック＆消費を実行
             if (weaponManager.TryUseSkill(skillToUse))
             {
-                Debug.Log($"[スキル発動] {skillToUse.skillName} (消費WP: {skillToUse.wpCost})");
-
-                // 攻撃判定プレハブ生成処理
-                if (skillToUse.hitboxPrefab != null)
+                Vector2 aimDirection = transform.right; 
+                
+                // AimController があれば現在のエイム方向を取得
+                if (TryGetComponent<PlayerAimController>(out var aimController))
                 {
-                    Instantiate(skillToUse.hitboxPrefab, transform.position, transform.rotation);
+                    // aimController から方向を取得する処理など
                 }
+
+                EntityStats playerStats = GetComponent<EntityStats>();
+
+                // 変数名を attackPoint に統一
+                Transform spawnParent = attackPoint != null ? attackPoint : transform;
+                skillToUse.Execute(spawnParent, aimDirection, playerStats);
             }
         }
     }

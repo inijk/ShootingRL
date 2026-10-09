@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 7313004483352580399}
   - component: {fileID: 12120092201061105}
   m_Layer: 0
-  m_Name: AttackHitbox
+  m_Name: SlashHitbox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

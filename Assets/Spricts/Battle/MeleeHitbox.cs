@@ -2,26 +2,29 @@ using UnityEngine;
 
 public class MeleeHitbox : MonoBehaviour
 {
-    [SerializeField] private float lifeTime = 0.2f; // 斬撃の持続時間
+    [SerializeField] private float lifeTime = 0.2f; // 斬撃の持持続時間
     private EntityStats attackerStats;
+    private float damageMultiplier = 1.0f; // ダメージ倍率を追加
 
-    public void Setup(EntityStats stats)
+    // ★ 引数を2つ（EntityStats と ダメージ倍率）受け取れるように変更
+    public void Setup(EntityStats stats, float multiplier = 1.0f)
     {
         attackerStats = stats;
+        damageMultiplier = multiplier;
         Destroy(gameObject, lifeTime); // 指定時間後に消滅
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // 攻撃を受けた対象から EntityStats を取得
         if (other.TryGetComponent<EntityStats>(out var targetStats))
         {
-            // 簡易ダメージ計算 (自分のATK - 相手のDEF)
+            // 攻撃者のATKにダメージ倍率（damageMultiplier）を乗算
             float attackerAtk = attackerStats != null ? attackerStats.Attack.Value : 10f;
+            float totalAtk = attackerAtk * damageMultiplier;
+            
             float targetDef = targetStats.Defense.Value;
-            float finalDamage = Mathf.Max(1f, attackerAtk - targetDef);
+            float finalDamage = Mathf.Max(1f, totalAtk - targetDef);
 
-            // HP減算
             targetStats.HP.Consume(finalDamage);
             Debug.Log($"{other.name} に {finalDamage} ダメージを与えた！");
         }
